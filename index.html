@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<title>进销项匹配与异常预警 — 宇守信咨询</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:#f0f4f8;color:#2d3436;padding-bottom:80px}
+.header{background:linear-gradient(135deg,#0c1445,#1a3a6b);color:#fff;padding:28px 20px 20px;text-align:center}
+.header h1{font-size:20px;font-weight:700;margin-bottom:4px}
+.header .sub{font-size:13px;opacity:.85}
+.header .badge{display:inline-block;background:rgba(255,255,255,.2);border-radius:20px;padding:3px 12px;font-size:10px;margin-top:8px}
+.tabs{display:flex;background:#fff;position:sticky;top:0;z-index:10;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.tab{flex:1;text-align:center;padding:12px 0;font-size:13px;font-weight:600;color:#888;cursor:pointer;border-bottom:3px solid transparent;transition:.2s}
+.tab.active{color:#1e3a6f;border-bottom-color:#1e3a6f}
+.panel{display:none;padding:12px;max-width:640px;margin:0 auto}
+.panel.active{display:block}
+
+.card{background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.05);margin-bottom:14px}
+.card-title{padding:12px 16px;font-size:14px;font-weight:700;color:#1e3a6f;border-bottom:1px solid #eef0f4}
+.card-title .hint{font-size:11px;font-weight:400;color:#999;margin-left:6px}
+
+.form-row{display:flex;align-items:center;padding:9px 16px;border-bottom:1px solid #f5f6f8;gap:8px;flex-wrap:wrap}
+.form-row:last-child{border-bottom:none}
+.form-row label{font-size:13px;color:#444;min-width:100px;flex-shrink:0}
+.form-row input{padding:7px 10px;border:1px solid #e0e0e0;border-radius:8px;font-size:13px;flex:1;min-width:80px;max-width:180px;background:#f0f4ff;outline:none;text-align:right}
+.form-row input:focus{border-color:#1e3a6f;box-shadow:0 0 0 2px rgba(30,58,111,.1)}
+.form-row .unit{font-size:11px;color:#999;min-width:30px}
+
+.sec-title{padding:10px 16px;font-size:12px;font-weight:700;color:#1e3a6f;background:#f0f4ff}
+
+.check-row{display:flex;align-items:center;padding:9px 16px;border-bottom:1px solid #f5f5f5;gap:8px}
+.check-row:last-child{border-bottom:none}
+.check-row .text{flex:1;font-size:13px;color:#444;line-height:1.5}
+.check-row .val{font-size:13px;font-weight:600;color:#1e3a6f;min-width:80px;text-align:right}
+.check-row .tag{font-size:10px;padding:2px 8px;border-radius:10px;white-space:nowrap}
+.tag-safe{background:#e6f7e6;color:#16a34a}
+.tag-warn{background:#fef9e7;color:#d97706}
+.tag-danger{background:#feeaea;color:#dc2626}
+
+.calc-btn{display:block;width:100%;padding:14px;background:linear-gradient(135deg,#0c1445,#1a3a6b);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;margin:16px 0;box-shadow:0 2px 8px rgba(12,20,69,.2)}
+.calc-btn:active{opacity:.85;transform:scale(.98)}
+
+/* 报告 */
+.score-card{background:linear-gradient(135deg,#0c1445,#1a3a6b);color:#fff;border-radius:16px;padding:28px 20px;text-align:center;margin-bottom:16px}
+.score-card .label{font-size:13px;opacity:.85}
+.score-card .num{font-size:40px;font-weight:800;margin:6px 0}
+.score-card .grade{font-size:15px;font-weight:600;margin-bottom:4px}
+.score-card .suggestion{font-size:12px;opacity:.9;line-height:1.6}
+
+.dim-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.dim-card{background:#fff;border-radius:12px;padding:16px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.dim-card .name{font-size:12px;color:#888;margin-bottom:4px}
+.dim-card .dscore{font-size:22px;font-weight:700}
+.dim-card .dstatus{display:inline-block;padding:2px 10px;border-radius:10px;font-size:11px;margin-top:6px}
+
+.detail-card{background:#fff;border-radius:12px;padding:16px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.detail-card .dtitle{font-size:13px;font-weight:700;color:#1e3a6f;margin-bottom:6px}
+.detail-card .drow{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #f5f5f5;font-size:12px}
+.detail-card .drow:last-child{border-bottom:none}
+
+.member-banner{background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);color:#fff;border-radius:12px;padding:20px;text-align:center;margin-top:16px}
+.member-banner h3{font-size:14px;font-weight:700;margin-bottom:4px}
+.member-banner p{font-size:12px;opacity:.8;line-height:1.6;margin-bottom:10px}
+.member-banner .btn{display:inline-block;background:#fff;color:#302b63;padding:8px 24px;border-radius:20px;font-size:13px;font-weight:600;text-decoration:none}
+
+.back-link{text-align:center;padding:16px;margin-top:4px}
+.back-link a{display:inline-block;padding:10px 24px;background:#e8eaf6;color:#1e3a6f;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;border:1px solid #c5cae9}
+
+.help-card{background:#fff;border-radius:12px;padding:18px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.help-card h3{font-size:14px;color:#1e3a6f;margin-bottom:8px}
+.help-card p,.help-card li{font-size:13px;color:#555;line-height:1.8}
+
+@media (max-width:480px){.dim-grid{grid-template-columns:1fr}}
+
+/* ===== 打印/PDF样式 ===== */
+@media print {
+  body { background:white !important; padding:0 !important; margin:0 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .fixed-bottom, .no-print, .marketing, [class*="返回"], footer, .footer, #返回, .return-bar, .bottom-bar { display:none !important; }
+  .header { background:linear-gradient(135deg,#0c1445,#1a3a6b) !important; color:white !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; padding:20px 16px !important; }
+  .card, .dim-card, .check-item, .result-card { break-inside:avoid; page-break-inside:avoid; border:1px solid #ddd !important; box-shadow:none !important; }
+  .score-card, .result-summary { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .tabs { display:none !important; }
+  .panel { display:block !important; padding:10px !important; }
+  .dim-grid { display:grid !important; grid-template-columns:1fr 1fr !important; gap:8px !important; }
+  .form-row { padding:6px 10px !important; }
+  a[href]:after { content:none !important; }
+}
+
+.pdf-btn { background:linear-gradient(135deg,#b8860b,#d4a843) !important; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🔄 进销项匹配与异常预警</h1>
+  <div class="sub">自动检测发票进销项异常，预警税务风险</div>
+  <div class="badge">🥈 银级专属工具</div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('input')">📝 录入数据</div>
+  <div class="tab" onclick="switchTab('report')">📊 检测报告</div>
+  <div class="tab" onclick="switchTab('help')">💡 说明</div>
+</div>
+
+<div class="panel active" id="panel-input">
+  <div class="card">
+    <div class="card-title">📥 进项发票数据 <span class="hint">(近12个月累计)</span></div>
+    <div class="form-row"><label>进项税额合计</label><input id="f_进项税额" type="number" placeholder="0"><span class="unit">元</span></div>
+    <div class="form-row"><label>进项发票份数</label><input id="f_进项份数" type="number" placeholder="0"><span class="unit">份</span></div>
+    <div class="form-row"><label>进项金额合计</label><input id="f_进项金额" type="number" placeholder="0"><span class="unit">元</span></div>
+    <div class="form-row"><label>其中：专票进项税额</label><input id="f_专票进项" type="number" placeholder="0"><span class="unit">元</span></div>
+    <div class="form-row"><label>农产品/收购发票金额</label><input id="f_农产品" type="number" placeholder="0"><span class="unit">元</span></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📤 销项发票数据 <span class="hint">(近12个月累计)</span></div>
+    <div class="form-row"><label>销项税额合计</label><input id="f_销项税额" type="number" placeholder="0"><span class="unit">元</span></div>
+    <div class="form-row"><label>销项发票份数</label><input id="f_销项份数" type="number" placeholder="0"><span class="unit">份</span></div>
+    <div class="form-row"><label>销项金额合计</label><input id="f_销项金额" type="number" placeholder="0"><span class="unit">元</span></div>
+    <div class="form-row"><label>应税销售收入</label><input id="f_应税收入" type="number" placeholder="0"><span class="unit">元</span></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🏭 企业基础信息 <span class="hint">(选填，用于精准判断)</span></div>
+    <div class="form-row"><label>所属行业</label>
+      <select id="f_行业" style="padding:7px 10px;border:1px solid #e0e0e0;border-radius:8px;font-size:13px;flex:1;max-width:180px;outline:none;background:#f0f4ff">
+        <option value="">请选择</option>
+        <option value="制造业">制造业</option>
+        <option value="批发零售">批发零售</option>
+        <option value="建筑业">建筑业</option>
+        <option value="服务业">服务业</option>
+        <option value="信息技术">信息技术</option>
+        <option value="其他">其他</option>
+      </select>
+    </div>
+    <div class="form-row"><label>纳税人身份</label>
+      <select id="f_纳税人身份" style="padding:7px 10px;border:1px solid #e0e0e0;border-radius:8px;font-size:13px;flex:1;max-width:180px;outline:none;background:#f0f4ff">
+        <option value="一般纳税人">一般纳税人</option>
+        <option value="小规模纳税人">小规模纳税人</option>
+      </select>
+    </div>
+    <div class="form-row"><label>主要税率</label>
+      <select id="f_税率" style="padding:7px 10px;border:1px solid #e0e0e0;border-radius:8px;font-size:13px;flex:1;max-width:180px;outline:none;background:#f0f4ff">
+        <option value="13">13%</option>
+        <option value="9">9%</option>
+        <option value="6">6%</option>
+        <option value="3">3%</option>
+      </select>
+    </div>
+  </div>
+
+  <button class="calc-btn" onclick="calcReport()">📊 开始检测</button>
+</div>
+
+<div class="panel" id="panel-report">
+  <div id="reportBody"></div>
+
+      <div style="background:white;border-radius:12px;padding:14px;box-shadow:0 1px 4px rgba(0,0,0,.08);display:flex;flex-direction:column;align-items:flex-start;">
+        <div style="font-size:28px;margin-bottom:4px;">📋</div>
+        <div style="font-size:13px;font-weight:700;color:#1e3a6f;margin-bottom:2px;">发票合规自检</div>
+        <div style="font-size:11px;color:#888;margin-bottom:6px;line-height:1.4;">44项发票合规红线逐条对照</div>
+        <a href="https://sparrow528.github.io/invoice-check/" target="_blank" style="display:inline-block;padding:5px 14px;background:linear-gradient(135deg,#0c1445,#1a3a6b);color:white;border-radius:6px;font-size:11px;text-decoration:none;font-weight:600;">使用 →</a>
+      </div>
+      <div style="background:white;border-radius:12px;padding:14px;box-shadow:0 1px 4px rgba(0,0,0,.08);display:flex;flex-direction:column;align-items:flex-start;">
+        <div style="font-size:28px;margin-bottom:4px;">📈</div>
+        <div style="font-size:13px;font-weight:700;color:#1e3a6f;margin-bottom:2px;">企业所得税汇算清缴自检</div>
+        <div style="font-size:11px;color:#888;margin-bottom:6px;line-height:1.4;">收入确认·税前扣除·纳税调整</div>
+        <a href="https://sparrow528.github.io/settlement-check/" target="_blank" style="display:inline-block;padding:5px 14px;background:linear-gradient(135deg,#0c1445,#1a3a6b);color:white;border-radius:6px;font-size:11px;text-decoration:none;font-weight:600;">使用 →</a>
+      </div>
+      <div style="background:white;border-radius:12px;padding:14px;box-shadow:0 1px 4px rgba(0,0,0,.08);display:flex;flex-direction:column;align-items:flex-start;">
+        <div style="font-size:28px;margin-bottom:4px;">📉</div>
+        <div style="font-size:13px;font-weight:700;color:#1e3a6f;margin-bottom:2px;">企业成本费用分析</div>
+        <div style="font-size:11px;color:#888;margin-bottom:6px;line-height:1.4;">成本结构·费用占比·异常预警</div>
+        <a href="https://sparrow528.github.io/cost-analysis/" target="_blank" style="display:inline-block;padding:5px 14px;background:linear-gradient(135deg,#0c1445,#1a3a6b);color:white;border-radius:6px;font-size:11px;text-decoration:none;font-weight:600;">使用 →</a>
+      </div>
+      <div style="background:white;border-radius:12px;padding:14px;box-shadow:0 1px 4px rgba(0,0,0,.08);display:flex;flex-direction:column;align-items:flex-start;">
+        <div style="font-size:28px;margin-bottom:4px;">💰</div>
+        <div style="font-size:13px;font-weight:700;color:#1e3a6f;margin-bottom:2px;">企业现金流压力测试</div>
+        <div style="font-size:11px;color:#888;margin-bottom:6px;line-height:1.4;">应收账款·应付账款·现金流预测</div>
+        <a href="https://sparrow528.github.io/cashflow-checkup/" target="_blank" style="display:inline-block;padding:5px 14px;background:linear-gradient(135deg,#0c1445,#1a3a6b);color:white;border-radius:6px;font-size:11px;text-decoration:none;font-weight:600;">使用 →</a>
+      </div>
+      <div style="background:white;border-radius:12px;padding:14px;box-shadow:0 1px 4px rgba(0,0,0,.08);display:flex;flex-direction:column;align-items:flex-start;">
+        <div style="font-size:28px;margin-bottom:4px;">🔍</div>
+        <div style="font-size:13px;font-weight:700;color:#1e3a6f;margin-bottom:2px;">税务稽查风险自测</div>
+        <div style="font-size:11px;color:#888;margin-bottom:6px;line-height:1.4;">模拟税务局选案·评估稽查概率</div>
+        <a href="https://sparrow528.github.io/audit-risk-check/" target="_blank" style="display:inline-block;padding:5px 14px;background:linear-gradient(135deg,#0c1445,#1a3a6b);color:white;border-radius:6px;font-size:11px;text-decoration:none;font-weight:600;">使用 →</a>
+      </div>
+    </div>
+  </div>
+  <div class="back-link"><a href="https://sparrow528.github.io/silver-toolbox/">← 返回银级会员入口</a></div>
+  <div class="member-banner">
+    <h3>🔒 银级会员 · 进销项检测</h3>
+    <p>升级金级会员享更全面的发票合规分析 + 一对一专家咨询</p>
+    <a class="btn" href="https://sparrow528.github.io/tax-membership/" target="_blank">👉 了解金级方案</a>
+    <div style="margin-top:8px;font-size:10px;opacity:.6">宇守信咨询 · 洪淳宇 · 186-0129-4989</div>
+  </div>
+</div>
+
+<div class="panel" id="panel-help">
+  <div class="help-card">
+    <h3>📋 使用说明</h3>
+    <p>1. 在「录入数据」页填写近12个月的进销项发票数据</p>
+    <p>2. 点击「开始检测」自动分析6大维度</p>
+    <p>3. 系统自动判断每项指标状态</p>
+    <p>4. 查看检测报告了解风险点及改善建议</p>
+  </div>
+  <div class="help-card">
+    <h3>📊 检测维度</h3>
+    <p><strong>进销项匹配度</strong> — 进项与销项的结构是否合理</p>
+    <p><strong>税负率异常</strong> — 实际税负是否偏离正常区间</p>
+    <p><strong>发票份数异常</strong> — 单张发票金额是否过大或过小</p>
+    <p><strong>进销倒挂</strong> — 进项大于销项是否持续异常</p>
+    <p><strong>农产品抵扣</strong> — 农产品发票占比是否合理</p>
+    <p><strong>专票占比</strong> — 可抵扣比例是否异常偏低</p>
+  </div>
+  <div class="help-card">
+    <h3>👤 关于作者</h3>
+    <p>洪淳宇 · 18年财税实战经验</p>
+    <p>专注企业财税合规、税务筹划、稽查应对</p>
+    <p style="margin-top:4px;font-size:12px;color:#999;">📞 186-0129-4989</p>
+  </div>
+</div>
+
+<script>
+function getVal(id) {
+  var el = document.getElementById('f_'+id);
+  return el ? parseFloat(el.value) || 0 : 0;
+}
+
+function getSelect(id) {
+  var el = document.getElementById('f_'+id);
+  return el ? el.value : '';
+}
+
+function calcReport() {
+  var jinE = getVal('进项税额');
+  var jinFen = getVal('进项份数');
+  var jinJinE = getVal('进项金额');
+  var zhuanPiao = getVal('专票进项');
+  var nongYe = getVal('农产品');
+  var xiaoE = getVal('销项税额');
+  var xiaoFen = getVal('销项份数');
+  var xiaoJinE = getVal('销项金额');
+  var yingShou = getVal('应税收入');
+  var hangYe = getSelect('行业');
+  var naShuiRen = getSelect('纳税人身份');
+  var shuiLv = parseFloat(getSelect('税率')) || 13;
+
+  // 如果任何数据都没填
+  if (jinE === 0 && xiaoE === 0) {
+    alert('请至少填写进项税额和销项税额！');
+    return;
+  }
+
+  var results = [];
+  var totalScore = 0, totalMax = 0;
+  var dangerItems = [];
+
+  // 1. 进销项匹配度
+  totalMax += 20;
+  var matchScore = 0;
+  var matchStatus = 'green';
+  if (jinE > 0 && xiaoE > 0) {
+    var ratio = jinE / xiaoE;
+    if (ratio >= 0.3 && ratio <= 1.2) { matchScore = 20; matchStatus = 'green'; }
+    else if (ratio >= 0.15 && ratio <= 1.5) { matchScore = 12; matchStatus = 'yellow'; dangerItems.push({dim:'进销项匹配度', msg:'进销项比例'+(ratio<0.3?'偏低':'偏高')+'，建议核实原因'}); }
+    else { matchScore = 4; matchStatus = 'red'; dangerItems.push({dim:'进销项匹配度', msg:'进销项比例严重'+(ratio<0.15?'偏低':'偏高')+'，存在异常风险'}); }
+  }
+  totalScore += matchScore;
+  var matchRatio = jinE > 0 && xiaoE > 0 ? (jinE/xiaoE*100).toFixed(1) : '—';
+
+  // 2. 税负率异常
+  totalMax += 20;
+  var taxScore = 0, taxStatus = 'green';
+  if (yingShou > 0 && xiaoE > 0) {
+    var taxRate = (xiaoE - jinE) / yingShou * 100;
+    var expectedLow = 0.5, expectedHigh = 5;
+    if (naShuiRen === '小规模纳税人') { expectedLow = 0.5; expectedHigh = 3; }
+    if (hangYe === '批发零售') { expectedLow = 0.3; expectedHigh = 2; }
+    if (hangYe === '制造业') { expectedLow = 1; expectedHigh = 4; }
+    if (taxRate >= expectedLow && taxRate <= expectedHigh) { taxScore = 20; taxStatus = 'green'; }
+    else if (taxRate >= expectedLow*0.3 && taxRate <= expectedHigh*2) { taxScore = 12; taxStatus = 'yellow'; dangerItems.push({dim:'税负率异常', msg:'实际税负率'+taxRate.toFixed(2)+'%，偏离正常区间('+expectedLow+'%~'+expectedHigh+'%)'}); }
+    else { taxScore = 4; taxStatus = 'red'; dangerItems.push({dim:'税负率异常', msg:'税负率'+taxRate.toFixed(2)+'%严重偏离正常水平，可能被稽查关注'}); }
+  }
+  totalScore += taxScore;
+  var taxRateDisplay = yingShou > 0 && xiaoE > 0 ? ((xiaoE-jinE)/yingShou*100).toFixed(2)+'%' : '—';
+
+  // 3. 发票份数异常
+  totalMax += 15;
+  var fenScore = 0, fenStatus = 'green';
+  if (jinFen > 0 && xiaoFen > 0) {
+    var avgJin = jinJinE > 0 ? jinJinE/jinFen : 0;
+    var avgXiao = xiaoJinE > 0 ? xiaoJinE/xiaoFen : 0;
+    if (avgJin > 0 && avgJin < 100000 && avgXiao < 100000) { fenScore = 15; fenStatus = 'green'; }
+    else if (avgJin > 500000 || avgXiao > 500000) { fenScore = 9; fenStatus = 'yellow'; dangerItems.push({dim:'发票份数异常', msg:'单张发票金额偏大，可能引起关注'}); }
+    else { fenScore = 3; fenStatus = 'red'; dangerItems.push({dim:'发票份数异常', msg:'单张发票金额异常大，疑似拆分或集中开票'}); }
+  }
+  totalScore += fenScore;
+
+  // 4. 进销倒挂
+  totalMax += 15;
+  var daoScore = 0, daoStatus = 'green';
+  if (jinE > 0 && xiaoE > 0) {
+    if (jinE <= xiaoE) { daoScore = 15; daoStatus = 'green'; }
+    else {
+      var daoRate = (jinE - xiaoE) / xiaoE;
+      if (daoRate < 0.5) { daoScore = 9; daoStatus = 'yellow'; dangerItems.push({dim:'进销倒挂', msg:'进项税额大于销项税额，可能存在留抵异常'}); }
+      else { daoScore = 3; daoStatus = 'red'; dangerItems.push({dim:'进销倒挂', msg:'进项税额远超销项税额，持续留抵异常风险高'}); }
+    }
+  }
+  totalScore += daoScore;
+
+  // 5. 农产品抵扣
+  totalMax += 15;
+  var nongScore = 0, nongStatus = 'green';
+  if (jinE > 0 && nongYe > 0) {
+    var nongRate = nongYe / (jinJinE || 1) * 100;
+    if (nongRate < 10) { nongScore = 15; nongStatus = 'green'; }
+    else if (nongRate < 30) { nongScore = 9; nongStatus = 'yellow'; dangerItems.push({dim:'农产品抵扣', msg:'农产品发票占比'+nongRate.toFixed(1)+'%偏高，关注真实性与计算准确性'}); }
+    else { nongScore = 3; nongStatus = 'red'; dangerItems.push({dim:'农产品抵扣', msg:'农产品发票占比'+nongRate.toFixed(1)+'%异常偏高，重点稽查风险'}); }
+  }
+  totalScore += nongScore;
+
+  // 6. 专票占比
+  totalMax += 15;
+  var zhuanScore = 0, zhuanStatus = 'green';
+  if (jinE > 0 && zhuanPiao > 0) {
+    var zhuanRate = zhuanPiao / jinE * 100;
+    if (zhuanRate >= 70) { zhuanScore = 15; zhuanStatus = 'green'; }
+    else if (zhuanRate >= 40) { zhuanScore = 9; zhuanStatus = 'yellow'; dangerItems.push({dim:'专票占比', msg:'专票占比'+zhuanRate.toFixed(1)+'%偏低，可能存在未充分取得专票情况'}); }
+    else { zhuanScore = 3; zhuanStatus = 'red'; dangerItems.push({dim:'专票占比', msg:'专票占比'+zhuanRate.toFixed(1)+'%严重偏低，进项抵扣不充分'}); }
+  }
+  totalScore += zhuanScore;
+
+  var rate = totalMax > 0 ? Math.round(totalScore/totalMax*100) : 0;
+  var grade, suggestion, gradeColor;
+  if (rate >= 90) { grade='🟢 进销项状况良好'; suggestion='各项指标正常，继续保持！'; gradeColor='#16a34a'; }
+  else if (rate >= 75) { grade='🟡 基本正常，需关注异常项'; suggestion='大部分指标正常，建议针对预警项核实原因'; gradeColor='#d97706'; }
+  else if (rate >= 60) { grade='🟠 存在一定风险'; suggestion='部分指标异常，建议尽快核实并整改'; gradeColor='#e65100'; }
+  else { grade='🔴 风险较高'; suggestion='多项指标异常，建议立即请专业顾问全面诊断'; gradeColor='#dc2626'; }
+
+  var dimStatus = {green:{label:'✅ 正常',color:'#16a34a',bg:'#e6f7e6'}, yellow:{label:'⚡ 关注',color:'#d97706',bg:'#fef9e7'}, red:{label:'❌ 预警',color:'#dc2626',bg:'#feeaea'}};
+
+  var html = '';
+  html += '<div class="score-card">';
+  html += '<div class="label">进销项合规评分</div>';
+  html += '<div class="num">'+totalScore+'/'+totalMax+'</div>';
+  html += '<div class="grade" style="color:'+gradeColor+'">'+grade+'</div>';
+  html += '<div class="suggestion">'+suggestion+'</div></div>';
+
+  html += '<div class="dim-grid">';
+  var dims = [
+    {name:'进销项匹配度', score:matchScore, max:20, st:matchStatus},
+    {name:'税负率异常', score:taxScore, max:20, st:taxStatus},
+    {name:'发票份数异常', score:fenScore, max:15, st:fenStatus},
+    {name:'进销倒挂', score:daoScore, max:15, st:daoStatus},
+    {name:'农产品抵扣', score:nongScore, max:15, st:nongStatus},
+    {name:'专票占比', score:zhuanScore, max:15, st:zhuanStatus},
+  ];
+  dims.forEach(function(d){
+    var ds = dimStatus[d.st];
+    html += '<div class="dim-card"><div class="name">'+d.name+'</div>';
+    html += '<div class="dscore" style="color:'+ds.color+'">'+d.score+'</div>';
+    html += '<div style="font-size:11px;color:#999">/ '+d.max+' 分</div>';
+    html += '<div class="dstatus" style="background:'+ds.bg+';color:'+ds.color+'">'+ds.label+'</div></div>';
+  });
+  html += '</div>';
+
+  // 详细数据
+  html += '<div class="card"><div class="card-title">📊 详细数据</div>';
+  html += '<div class="detail-card"><div class="dtitle">进销项比例</div>';
+  html += '<div class="drow"><span>进项税额</span><span>'+jinE.toLocaleString()+' 元</span></div>';
+  html += '<div class="drow"><span>销项税额</span><span>'+xiaoE.toLocaleString()+' 元</span></div>';
+  html += '<div class="drow" style="font-weight:600"><span>进销比</span><span>'+(matchRatio!=='—'?matchRatio+'%':'—')+'</span></div></div>';
+
+  html += '<div class="detail-card"><div class="dtitle">税负分析</div>';
+  html += '<div class="drow"><span>应缴增值税</span><span>'+(xiaoE-jinE).toLocaleString()+' 元</span></div>';
+  html += '<div class="drow"><span>应税收入</span><span>'+yingShou.toLocaleString()+' 元</span></div>';
+  html += '<div class="drow" style="font-weight:600"><span>实际税负率</span><span>'+taxRateDisplay+'</span></div></div>';
+
+  html += '<div class="detail-card"><div class="dtitle">发票结构</div>';
+  html += '<div class="drow"><span>进项发票均价</span><span>'+(jinFen>0?Math.round(jinJinE/jinFen).toLocaleString():0)+' 元/份</span></div>';
+  html += '<div class="drow"><span>销项发票均价</span><span>'+(xiaoFen>0?Math.round(xiaoJinE/xiaoFen).toLocaleString():0)+' 元/份</span></div>';
+  html += '<div class="drow"><span>专票占进项比</span><span>'+(jinE>0?Math.round(zhuanPiao/jinE*100)+'%':'—')+'</span></div></div></div>';
+
+  // 风险项
+  if (dangerItems.length > 0) {
+    html += '<div style="font-size:14px;font-weight:700;color:#dc2626;margin:12px 0 8px">⚠️ 需要关注 '+dangerItems.length+' 项</div>';
+    dangerItems.forEach(function(d){
+      html += '<div style="padding:10px 14px;background:#fff;border-left:4px solid #dc2626;margin-bottom:6px;border-radius:0 8px 8px 0;font-size:13px;box-shadow:0 1px 3px rgba(0,0,0,.04)">';
+      html += '<strong>['+d.dim+']</strong> '+d.msg+'</div>';
+    });
+  }
+
+  document.getElementById('reportBody').innerHTML = html;
+  switchTab('report');
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(function(t){
+    t.classList.toggle('active', t.getAttribute('onclick').includes(name));
+  });
+  document.querySelectorAll('.panel').forEach(function(p){
+    p.classList.toggle('active', p.id === 'panel-'+name);
+  });
+}
+
+function downloadPDF(){
+  window.print();
+}
+</script>
+</body>
+</html>
